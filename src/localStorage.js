@@ -1,4 +1,5 @@
 export const loadState = () => {
+  // Use try-catch avoiding the app crash
   try {
     const serializedState = localStorage.getItem('state');
     if (serializedState === null) {

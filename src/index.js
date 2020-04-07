@@ -14,6 +14,8 @@ const store = createStore(
   persistedState
 );
 
+// Use the fnc throttle of lodash for performance
+// because in saveState, it has the expensive fnc JSON.stringify
 store.subscribe(throttle(() => {
   saveState({
     todos: store.getState().todos,
