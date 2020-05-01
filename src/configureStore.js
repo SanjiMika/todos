@@ -1,7 +1,8 @@
 import { createStore } from 'redux';
 import todoApp from './reducers';
 
-const logger = (store) => (next) => {
+// VERY IMPORTANT : understand middlewares from scratch
+const logger = (store) => (next) => { // next = the next dispatch function
   /* eslint-disable no-console */
   if (!console.group) {
     return next;
@@ -19,6 +20,7 @@ const logger = (store) => (next) => {
   /* eslint-enable no-console */
 };
 
+// VERY IMPORTANT : understand middlewares from scratch
 const promise = (store) => (next) => (action) => { // eslint-disable-line no-unused-vars
   if (typeof action.then === 'function') {
     return action.then(next);
