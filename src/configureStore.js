@@ -1,7 +1,7 @@
 import { createStore } from 'redux';
 import todoApp from './reducers';
 
-// VERY IMPORTANT : understand middlewares from scratch
+// VERY IMPORTANT : currying function - understand middlewares from scratch
 const logger = (store) => (next) => { // next = the next dispatch function
   /* eslint-disable no-console */
   if (!console.group) {
