@@ -1,37 +1,105 @@
+/* eslint-disable no-console */
+import React, { Component, PropTypes } from 'react';
 import { connect } from 'react-redux';
-import { toggleTodo } from '../actions';
+import { withRouter } from 'react-router';
+import * as actions from '../actions';
+// eslint-disable-next-line no-unused-vars
+import { getErrorMessage, getIsFetching, getVisibleTodos } from '../reducers';
 import TodoList from './TodoList';
+import FetchError from './FetchError';
+import * as fromList from '../reducers/createList';
+import * as fromById from '../reducers/byId';
 
-const getVisibleTodos = (todos, filter) => {
-  switch (filter) {
-    case 'SHOW_ALL':
-      return todos;
-    case 'SHOW_COMPLETED':
-      return todos.filter(t => t.completed);
-    case 'SHOW_ACTIVE':
-      return todos.filter(t => !t.completed);
-    default:
-      throw new Error(`Unknown filter: ${filter}.`);
+class VisibleTodoList extends Component {
+  componentDidMount() {
+    this.fetchData();
   }
+
+  componentDidUpdate(prevProps) {
+    if (this.props.filter !== prevProps.filter) {
+      this.fetchData();
+    }
+  }
+
+  fetchData() {
+    const { filter, fetchTodos } = this.props;
+    fetchTodos(filter);
+  }
+
+  render() {
+    console.log('VisibleTodoList : render');
+    const { isFetching, errorMessage, toggleTodo, todos } = this.props;
+    if (isFetching && !todos.length) {
+      return <p>Loading...</p>;
+    }
+    if (errorMessage && !todos.length) {
+      return (
+        <FetchError
+          message={errorMessage}
+          onRetry={() => this.fetchData()}
+        />
+      );
+    }
+
+    return (
+      <TodoList
+        todos={todos}
+        onTodoClick={toggleTodo}
+      />
+    );
+  }
+}
+
+VisibleTodoList.propTypes = {
+  filter: PropTypes.oneOf(['all', 'active', 'completed']).isRequired,
+  errorMessage: PropTypes.string,
+  todos: PropTypes.array.isRequired,
+  isFetching: PropTypes.bool.isRequired,
+  fetchTodos: PropTypes.func.isRequired,
+  toggleTodo: PropTypes.func.isRequired,
 };
 
-const mapStateToProps = (state) => {
+const mapStateToProps = (state, { params }) => {
+  console.log('VisibleTodoList : mapState');
+  const filter = params.filter || 'all';
   return {
-    todos: getVisibleTodos(state.todos, state.visibilityFilter),
+    isFetching: getIsFetching(state, filter),
+    errorMessage: getErrorMessage(state, filter),
+    // Not optimized : return always a new ref obj todos
+    // todos: getVisibleTodos(state, filter),
+    filter,
+    listByFilter: state.listByFilter,
+    byId: state.byId,
+    // Not optimized : return always a new ref array
+    test_array: [],
   };
 };
 
-const mapDispatchToProps = (dispatch) => {
+const mapDispatchToProps = {
+  ...actions,
+};
+
+const mergeProps = (stateProps, dispatchProps) => {
+  console.log('VisibleTodoList : mergeProps');
+  const { byId, listByFilter, filter } = stateProps;
+
+  // Optimize todos selectors in mergeProps
+  const ids = fromList.getIds(listByFilter[filter]);
+  const todos = ids.map(id => fromById.getTodo(byId, id));
+
+  const newFncTest = () => {};
   return {
-    onTodoClick: (id) => {
-      dispatch(toggleTodo(id));
-    },
+    ...stateProps,
+    ...dispatchProps,
+    todos,
+    newFncTest,
   };
 };
 
-const VisibleTodoList = connect(
+VisibleTodoList = withRouter(connect(
   mapStateToProps,
-  mapDispatchToProps
-)(TodoList);
+  mapDispatchToProps,
+  mergeProps
+)(VisibleTodoList));
 
 export default VisibleTodoList;
